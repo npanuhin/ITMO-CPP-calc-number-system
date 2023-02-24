@@ -106,15 +106,51 @@ std::size_t skip_ws(const std::string & line, std::size_t i)
     return i;
 }
 
-double parse_arg(const std::string & line, std::size_t & i)
+int parse_base(const std::string & line, std::size_t & i)
+{
+    int base = 10;
+
+    if (line.size() - i >= 2 && line[i] == '0') {
+        switch (static_cast<char>(std::tolower(line[++i]))) {
+        case 'b':
+            base = 2;
+            ++i;
+            break;
+        case 'x':
+            base = 16;
+            ++i;
+            break;
+        case '.':
+            --i;
+            break;
+        default:
+            base = 8;
+            break;
+        }
+    }
+    return base;
+}
+
+int digit_to_int(char digit)
+{
+    if ('a' <= digit && digit <= 'f') {
+        return digit - 'a' + 10;
+    }
+    return digit - '0';
+}
+
+double parse_arg(const std::string & line, std::size_t & i, int base)
 {
     double res = 0;
     std::size_t count = 0;
     bool good = true;
     bool integer = true;
     double fraction = 1;
+    char cur_digit;
+
     while (good && i < line.size() && count < max_decimal_digits) {
-        switch (line[i]) {
+        cur_digit = static_cast<char>(std::tolower(line[i]));
+        switch (cur_digit) {
         case '0':
         case '1':
         case '2':
@@ -125,18 +161,32 @@ double parse_arg(const std::string & line, std::size_t & i)
         case '7':
         case '8':
         case '9':
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+        case 'e':
+        case 'f':
+            if (digit_to_int(cur_digit) >= base) {
+                good = false;
+                break;
+            }
             if (integer) {
-                res *= 10;
-                res += line[i] - '0';
+                res *= base;
+                res += digit_to_int(cur_digit);
             }
             else {
-                fraction /= 10;
-                res += (line[i] - '0') * fraction;
+                fraction /= base;
+                res += digit_to_int(cur_digit) * fraction;
             }
             ++i;
             ++count;
             break;
         case '.':
+            if (!integer || !count) {
+                good = false;
+                break;
+            }
             integer = false;
             ++i;
             break;
@@ -216,8 +266,9 @@ double process_line(double currentValue,
     switch (arity(op)) {
     case 2: {
         i = skip_ws(line, i);
+        const auto base = parse_base(line, i);
         const auto old_i = i;
-        const auto arg = parse_arg(line, i);
+        const auto arg = parse_arg(line, i, base);
         if (i == old_i) {
             std::cerr << "No argument for a binary operation" << std::endl;
             break;
