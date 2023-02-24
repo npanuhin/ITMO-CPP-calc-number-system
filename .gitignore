@@ -32,3 +32,9 @@ CMakeLists.txt.user
 *.exe
 *.out
 *.app
+
+# JetBrains IDE
+/.idea/
+
+# CMake
+/cmake-build-debug/
