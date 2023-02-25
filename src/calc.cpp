@@ -146,11 +146,9 @@ double parse_arg(const std::string & line, std::size_t & i, int base)
     bool good = true;
     bool integer = true;
     double fraction = 1;
-    char cur_digit;
 
     while (good && i < line.size() && count < max_decimal_digits) {
-        cur_digit = static_cast<char>(std::tolower(line[i]));
-        switch (cur_digit) {
+        switch (char cur_digit = static_cast<char>(std::tolower(static_cast<unsigned char>(line[i])))) {
         case '0':
         case '1':
         case '2':
@@ -166,22 +164,23 @@ double parse_arg(const std::string & line, std::size_t & i, int base)
         case 'c':
         case 'd':
         case 'e':
-        case 'f':
-            if (digit_to_int(cur_digit) >= base) {
+        case 'f': {
+            auto digit_value = digit_to_int(cur_digit);
+            if (digit_value >= base) {
                 good = false;
                 break;
             }
             if (integer) {
                 res *= base;
-                res += digit_to_int(cur_digit);
+                res += digit_value;
             }
             else {
                 fraction /= base;
-                res += digit_to_int(cur_digit) * fraction;
+                res += digit_value * fraction;
             }
             ++i;
             ++count;
-            break;
+        } break;
         case '.':
             if (!integer || !count) {
                 good = false;
